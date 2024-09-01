@@ -134,24 +134,6 @@
                     clientVersion.IsBehindDefaultChannel = true;
             }
 
-            // for preferences
-            if (extraInformation && clientVersion.Timestamp is null)
-            {
-                App.Logger.WriteLine(LOG_IDENT, "Getting extra information...");
-
-                string manifestUrl = GetLocation($"/{clientVersion.VersionGuid}-rbxPkgManifest.txt", channel);
-
-                // get an approximate deploy time from rbxpkgmanifest's last modified date
-                //HttpResponseMessage pkgResponse = await App.HttpClient.GetAsync(manifestUrl);
-
-                //if (pkgResponse.Content.Headers.TryGetValues("last-modified", out var values))
-                //{
-                //    string lastModified = values.First();
-                //    App.Logger.WriteLine(LOG_IDENT, $"{manifestUrl} - Last-Modified: {lastModified}");
-                //    clientVersion.Timestamp = DateTime.Parse(lastModified).ToLocalTime();
-                //}
-            }
-
             ClientVersionCache[channel] = clientVersion;
 
             return clientVersion;
