@@ -229,10 +229,30 @@ namespace Bloxstrap
             }
             catch (HttpResponseException ex)
             {
-                if (ex.ResponseMessage.StatusCode != HttpStatusCode.NotFound)
+                // If channel does not exist
+                if (ex.ResponseMessage.StatusCode == HttpStatusCode.NotFound)
+                {
+                    App.Logger.WriteLine(LOG_IDENT, $"Reverting enrolled channel to {RobloxDeployment.DefaultChannel} because a WindowsPlayer build does not exist for {App.Settings.Prop.Channel}");
+                }
+                // If channel is not available to the user (private/internal release channel)
+                else if (ex.ResponseMessage.StatusCode == HttpStatusCode.Unauthorized)
+                {
+                    App.Logger.WriteLine(LOG_IDENT, $"Reverting enrolled channel to {RobloxDeployment.DefaultChannel} because {App.Settings.Prop.Channel} is restricted for public use.");
+                 
+                    // Only prompt if user has channel switching mode set to something other than Automatic.
+                    if (App.Settings.Prop.ChannelChangeMode != ChannelChangeMode.Automatic)
+                    {
+                        Controls.ShowMessageBox(
+                            $"The channel you're currently on ({App.Settings.Prop.Channel}) has now been restricted from public use. You will now be on the default channel ({RobloxDeployment.DefaultChannel}).",
+                            MessageBoxImage.Information
+                        );
+                    }
+                }
+                else
+                {
                     throw;
+                }
 
-                App.Logger.WriteLine(LOG_IDENT, $"Reverting enrolled channel to {RobloxDeployment.DefaultChannel} because a WindowsPlayer build does not exist for {App.Settings.Prop.Channel}");
                 App.Settings.Prop.Channel = RobloxDeployment.DefaultChannel;
                 clientVersion = await RobloxDeployment.GetInfo(App.Settings.Prop.Channel);
             }
@@ -498,7 +518,10 @@ namespace Bloxstrap
 
             // in case the user is reinstalling
             if (File.Exists(Paths.Application) && App.IsFirstRun)
+            {
+                Filesystem.AssertReadOnly(Paths.Application);
                 File.Delete(Paths.Application);
+            }
 
             // check to make sure bootstrapper is in the install folder
             if (!File.Exists(Paths.Application) && Environment.ProcessPath is not null)
@@ -763,7 +786,155 @@ namespace Bloxstrap
         #region Roblox Install
         private async Task InstallLatestVersion()
         {
-            //nooooooooooooooooooooooooooooooooooooooooooo
+            const string LOG_IDENT = "Bootstrapper::InstallLatestVersion";
+            
+            _isInstalling = true;
+
+            SetStatus(FreshInstall ? "Installing Roblox..." : "Upgrading Roblox...");
+
+            Directory.CreateDirectory(Paths.Base);
+            Directory.CreateDirectory(Paths.Downloads);
+            Directory.CreateDirectory(Paths.Versions);
+
+            // package manifest states packed size and uncompressed size in exact bytes
+            // packed size only matters if we don't already have the package cached on disk
+            string[] cachedPackages = Directory.GetFiles(Paths.Downloads);
+            int totalSizeRequired = _versionPackageManifest.Where(x => !cachedPackages.Contains(x.Signature)).Sum(x => x.PackedSize) + _versionPackageManifest.Sum(x => x.Size);
+            
+            if (Filesystem.GetFreeDiskSpace(Paths.Base) < totalSizeRequired)
+            {
+                Controls.ShowMessageBox(
+                    $"{App.ProjectName} does not have enough disk space to download and install Roblox. Please free up some disk space and try again.", 
+                    MessageBoxImage.Error
+                );
+
+                App.Terminate(ErrorCode.ERROR_INSTALL_FAILURE);
+                return;
+            }
+
+            if (Dialog is not null)
+            {
+                Dialog.CancelEnabled = true;
+                Dialog.ProgressStyle = ProgressBarStyle.Continuous;
+            }
+
+            // compute total bytes to download
+            _progressIncrement = (double)100 / _versionPackageManifest.Sum(package => package.PackedSize);
+
+            foreach (Package package in _versionPackageManifest)
+            {
+                if (_cancelFired)
+                    return;
+
+                // download all the packages synchronously
+                await DownloadPackage(package);
+
+                // we'll extract the runtime installer later if we need to
+                if (package.Name == "WebView2RuntimeInstaller.zip")
+                    continue;
+
+                // extract the package immediately after download asynchronously
+                // discard is just used to suppress the warning
+                _ = ExtractPackage(package).ContinueWith(AsyncHelpers.ExceptionHandler, $"extracting {package.Name}");
+            }
+
+            if (_cancelFired) 
+                return;
+
+            // allow progress bar to 100% before continuing (purely ux reasons lol)
+            await Task.Delay(1000);
+
+            if (Dialog is not null)
+            {
+                Dialog.ProgressStyle = ProgressBarStyle.Marquee;
+                SetStatus("Configuring Roblox...");
+            }
+
+            // wait for all packages to finish extracting, with an exception for the webview2 runtime installer
+            while (_packagesExtracted < _versionPackageManifest.Where(x => x.Name != "WebView2RuntimeInstaller.zip").Count())
+            {
+                await Task.Delay(100);
+            }
+
+            App.Logger.WriteLine(LOG_IDENT, "Writing AppSettings.xml...");
+            string appSettingsLocation = Path.Combine(_versionFolder, "AppSettings.xml");
+            await File.WriteAllTextAsync(appSettingsLocation, AppSettings);
+
+            if (_cancelFired)
+                return;
+
+            if (!FreshInstall)
+            {
+                // let's take this opportunity to delete any packages we don't need anymore
+                foreach (string filename in cachedPackages)
+                {
+                    if (!_versionPackageManifest.Exists(package => filename.Contains(package.Signature)))
+                    {
+                        App.Logger.WriteLine(LOG_IDENT, $"Deleting unused package {filename}");
+                        
+                        try
+                        {
+                            File.Delete(filename);
+                        }
+                        catch (Exception ex)
+                        {
+                            App.Logger.WriteLine(LOG_IDENT, $"Failed to delete {filename}!");
+                            App.Logger.WriteException(LOG_IDENT, ex);
+                        }
+                    }
+                }
+
+                string oldVersionFolder = Path.Combine(Paths.Versions, App.State.Prop.VersionGuid);
+
+                // move old compatibility flags for the old location
+                using (RegistryKey appFlagsKey = Registry.CurrentUser.CreateSubKey($"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\Layers"))
+                {
+                    string oldGameClientLocation = Path.Combine(oldVersionFolder, "RobloxPlayerBeta.exe");
+                    string? appFlags = (string?)appFlagsKey.GetValue(oldGameClientLocation);
+
+                    if (appFlags is not null)
+                    {
+                        App.Logger.WriteLine(LOG_IDENT, $"Migrating app compatibility flags from {oldGameClientLocation} to {_playerLocation}...");
+                        appFlagsKey.SetValue(_playerLocation, appFlags);
+                        appFlagsKey.DeleteValue(oldGameClientLocation);
+                    }
+                }
+
+                // delete any old version folders
+                // we only do this if roblox isnt running just in case an update happened
+                // while they were launching a second instance or something idk
+                if (!Process.GetProcessesByName(App.RobloxAppName).Any())
+                {
+                    foreach (DirectoryInfo dir in new DirectoryInfo(Paths.Versions).GetDirectories())
+                    {
+                        if (dir.Name == _latestVersionGuid || !dir.Name.StartsWith("version-"))
+                            continue;
+
+                        App.Logger.WriteLine(LOG_IDENT, $"Removing old version folder for {dir.Name}");
+
+                        try
+                        { 
+                            dir.Delete(true);
+                        }
+                        catch (Exception ex)
+                        {
+                            App.Logger.WriteLine(LOG_IDENT, "Failed to delete version folder!");
+                            App.Logger.WriteException(LOG_IDENT, ex);
+                        }
+                    }
+                }
+            }
+
+            App.State.Prop.VersionGuid = _latestVersionGuid;
+
+            // don't register program size until the program is registered, which will be done after this
+            if (!App.IsFirstRun && !FreshInstall)
+                RegisterProgramSize();
+
+            if (Dialog is not null)
+                Dialog.CancelEnabled = false;
+
+            _isInstalling = false;
         }
         
         private async Task InstallWebView2()
