@@ -1089,6 +1089,12 @@ namespace Bloxstrap
                 { @"content\textures\Cursors\KeyboardMouse\ArrowFarCursor.png", "Cursor.From2013.ArrowFarCursor.png" }
             });
 
+            await CheckModPreset(App.Settings.Prop.CursorType == CursorType.From2020, new Dictionary<string, string>
+            {
+                { @"content\textures\Cursors\KeyboardMouse\ArrowCursor.png",    "Cursor.From2020.ArrowCursor.png" },
+                { @"content\textures\Cursors\KeyboardMouse\ArrowFarCursor.png", "Cursor.From2020.ArrowFarCursor.png" }
+            });
+
             // character sounds
             await CheckModPreset(App.Settings.Prop.UseOldDeathSound, @"content\sounds\ouch.ogg", "Sounds.OldDeath.ogg");
 
