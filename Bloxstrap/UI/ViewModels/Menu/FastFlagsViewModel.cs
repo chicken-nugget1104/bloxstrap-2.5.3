@@ -120,8 +120,8 @@ namespace Bloxstrap.UI.ViewModels.Menu
 
         public bool GuiHidingEnabled
         {
-            get => App.FastFlags.GetPreset("UI.Hide") == "True";
-            set => App.FastFlags.SetPreset("UI.Hide", value ? "True" : null);
+            get => App.FastFlags.GetPreset("UI.Hide") == "10419936";
+            set => App.FastFlags.SetPreset("UI.Hide", value ? "10419936" : null);
         }
     }
 }
