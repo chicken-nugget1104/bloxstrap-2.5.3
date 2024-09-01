@@ -76,14 +76,6 @@ namespace Bloxstrap.UI.ViewModels.Menu
             set => App.FastFlags.SetPreset("Rendering.TexturePack", value ? FastFlagManager.OldTexturesFlagValue : null);
         }
 
-        public bool CircleThing
-        {
-            get => App.FastFlags.GetPreset("AvatarChatViz") == "True";
-            set => App.FastFlags.SetPreset("AvatarChatViz", value ? "True" : null);
-            get => App.FastFlags.GetPreset("IngameMenuChromeABTest2") == "False";
-            set => App.FastFlags.SetPreset("IngameMenuChromeABTest2", value ? "False" : null);
-        }
-
         public IReadOnlyDictionary<string, Dictionary<string, string?>> IGMenuVersions => FastFlagManager.IGMenuVersions;
 
         public string SelectedIGMenuVersion
