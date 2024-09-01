@@ -136,7 +136,7 @@
             </TextBlock>
           </Grid>
           <TextBlock Margin="0,2,0,0" FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}">
-            Toggled with <Hyperlink Foreground="{DynamicResource TextFillColorPrimaryBrush}" Command="models:GlobalViewModel.OpenWebpageCommand" CommandParameter="https://github.com/pizzaboxer/bloxstrap/wiki/A-guide-to-FastFlags#gui-hiding">keyboard shortcuts</Hyperlink>. Only works if you're in the <Hyperlink Foreground="{DynamicResource TextFillColorPrimaryBrush}" Command="models:GlobalViewModel.OpenWebpageCommand" CommandParameter="https://www.roblox.com/groups/32380007/Bloxstrap">Bloxstrap group</Hyperlink>.
+            Toggled with <Hyperlink Foreground="{DynamicResource TextFillColorPrimaryBrush}" Command="models:GlobalViewModel.OpenWebpageCommand" CommandParameter="https://github.com/pizzaboxer/bloxstrap/wiki/A-guide-to-FastFlags#gui-hiding">keyboard shortcuts</Hyperlink>.
           </TextBlock>
         </StackPanel>
       </ui:CardControl.Header>
