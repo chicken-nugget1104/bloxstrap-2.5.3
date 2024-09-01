@@ -44,7 +44,7 @@ namespace Bloxstrap
             { "UI.Menu.Style.ABTest.1", "FFlagEnableMenuControlsABTest" },
             { "UI.Menu.Style.ABTest.2", "FFlagEnableMenuModernizationABTest" },
             { "UI.Menu.Style.ABTest.3", "FFlagEnableMenuModernizationABTest2" },
-            { "UI.Menu.Style.ABTest.4", "FFlagEnableV3MenuABTest3" }
+            { "UI.Menu.Style.ABTest.4", "FFlagEnableV3MenuABTest3" },
 
             { "AvatarChatViz", "FFlagDebugAvatarChatVisualization" },
             { "IngameMenuChromeABTest2", "FFlagEnableInGameMenuChromeABTest2" }
