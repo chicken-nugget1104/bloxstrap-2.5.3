@@ -45,6 +45,9 @@ namespace Bloxstrap
             { "UI.Menu.Style.ABTest.2", "FFlagEnableMenuModernizationABTest" },
             { "UI.Menu.Style.ABTest.3", "FFlagEnableMenuModernizationABTest2" },
             { "UI.Menu.Style.ABTest.4", "FFlagEnableV3MenuABTest3" }
+
+            { "AvatarChatViz", "FFlagDebugAvatarChatVisualization" },
+            { "IngameMenuChromeABTest2", "FFlagEnableInGameMenuChromeABTest2" }
         };
 
         public static IReadOnlyDictionary<string, string> LightingModes => new Dictionary<string, string>
@@ -62,6 +65,12 @@ namespace Bloxstrap
             { "2x MSAA", "2" },
             { "4x MSAA", "4" },
             { "8x MSAA", "8" }
+        };
+
+        public static IReadOnlyDictionary<string, string?> CircleThing => new Dictionary<string, string?>
+        {
+            { "FFlagDebugAvatarChatVisualization", "True" },
+            { "FFlagEnableInGameMenuChromeABTest2", "False" }
         };
 
         // this is one hell of a dictionary definition lmao

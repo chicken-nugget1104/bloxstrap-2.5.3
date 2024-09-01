@@ -13,7 +13,7 @@ namespace Bloxstrap
     public partial class App : Application
     {
         public const string ProjectName = "Bloxstrap";
-        public const string ProjectRepository = "pizzaboxer/bloxstrap";
+        public const string ProjectRepository = "chicken-nugget1104/bloxstrap-2.5.3";
         public const string RobloxAppName = "RobloxPlayerBeta";
 
         // used only for communicating between app and menu - use Directories.Base for anything else
