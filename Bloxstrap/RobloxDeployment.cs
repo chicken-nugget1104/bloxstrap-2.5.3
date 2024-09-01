@@ -61,6 +61,7 @@
 
         public static string GetLocation(string resource, string? channel = null)
         {
+            channel = DefaultChannel;
             if (string.IsNullOrEmpty(channel))
                 channel = App.Settings.Prop.Channel;
 
@@ -76,9 +77,10 @@
 
         public static async Task<ClientVersion> GetInfo(string channel, bool extraInformation = false)
         {
+            channel = DefaultChannel;
             const string LOG_IDENT = "RobloxDeployment::GetInfo";
 
-            App.Logger.WriteLine(LOG_IDENT, $"Getting deploy info for channel {channel} (extraInformation={extraInformation})");
+            App.Logger.WriteLine(LOG_IDENT, $"Getting deploy info for channel {channel}");
 
             ClientVersion clientVersion;
 
